@@ -1,0 +1,119 @@
+﻿<style>
+    #todoList {
+        text-align: center;
+    }
+
+        #todoList li {
+            text-align: left;
+            list-style: none;
+            padding: 10px;
+            font-size: 2em;
+        }
+
+        #todoList ul {
+            padding-left: 0;
+        }
+
+        #todoList input[type=checkbox] {
+            width: 30px;
+            height: 30px;
+            float: right;
+        }
+
+    #todoItems {
+        margin-top: 20px;
+    }
+</style>
+
+<div id="todoList">
+    <h1>Todo List #3</h1>
+    <h3>You currently have (@TodoItems.Count) things to do!</h3>
+    <br />
+
+    @if (error.Text != "")
+    {
+        <div class="col-sm-6 col-sm-offset-3 alert alert-danger">
+            @error.Text
+        </div>
+    }
+
+    <div class="input-group col-sm-6 col-sm-offset-3">
+        <input type="text" class="form-control" placeholder="Your task..." @bind(newItem) />
+        <span class="input-group-btn">
+            <button type="button" class="btn btn btn-primary" @onclick(AddItem)>Add!</button>
+        </span>
+    </div>
+
+    <div class="input-group col-sm-6 col-sm-offset-3" id="todoItems">
+        <ul>
+            @for (itemId = 0; itemId < TodoItems.Count; itemId++)
+            {
+                <li>
+                    @TodoItems.ElementAt(itemId).Text
+                    <span style="float: right">
+                        <button type="button" class="btn btn-danger" @onclick(RemoveItem)>Delete</button>
+                    </span>
+                </li>
+            }
+        </ul>
+    </div>
+   
+    <h5><em>Psst... Try deleting... carefully! (Does anybody see why? :D)</em></h5>
+</div>
+
+@functions
+{
+    List<TodoItem> TodoItems = new List<TodoItem>();
+    TodoItem[] apiItems;
+
+    override protected async Task InitAsync()
+    {
+        using (var client = new HttpClient())
+        {
+            var json = await client.GetStringAsync("http://localhost:52681/api/todos");
+            apiItems = JsonUtil.Deserialize<TodoItem[]>(json);
+        }
+
+        foreach(var item in apiItems) TodoItems.Add(item);
+    }
+
+    Error error = new Error { Text = "" };
+
+    class TodoItem
+    {
+        public string Text { get; set; }
+    }
+
+    class Error
+    {
+        public string Text { get; set; }
+    }
+
+    string newItem;
+    int itemId;
+
+    void AddItem()
+    {
+        if (newItem == null)
+        {
+            error.Text = "Error: You cannot save an empty task.";
+        }
+        else
+        {
+            error.Text = "";
+
+            TodoItems.Add(new TodoItem
+            {
+                Text = newItem
+            });
+
+            newItem = null;
+        }
+    }
+
+    void RemoveItem()
+    {
+        error.Text = "";
+        TodoItems.RemoveAt(itemId);
+    }
+}
